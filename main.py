@@ -49,7 +49,7 @@ def requestJSON(options):
     request(options)
     try:
         JSON.parse(body)
-    catch exc:
+    except exc:
         print(exc)
         
 def parseCookie(cookie):
@@ -72,9 +72,250 @@ class Scratch:
             method: 'GET'
         })
         
-  # def getProjects = username, cb) {
-  #requestJSON({
-  #  hostname: API_SERVER,
-  #  path: '/users/' + username + '/projects',
-  #  method: 'GET'
-  #}, cb);
+    def UserSession(username, id, sessionId):
+        self.username = username;
+        self.id = id;
+        self.sessionId = sessionId;
+    
+    def UserSession.create(username, password):
+        try:
+            request({
+                path: '/login/',
+                method: 'POST',
+                body: JSON.stringify({username: username, password: password}),
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            }
+            user = JSON.parse(body)[0];
+            return new Scratch.UserSession(user.username, user.id, parseCookie(response.headers['set-cookie'][0]).scratchsessionsid));
+        except err:
+            print("error:",err)
+    
+    def UserSession.prompt():
+        uname=input("Enter username")
+        pass=input("Enter password")
+        Scratch.UserSession.create(uname, pass)
+    
+    def UserSession.load():
+        prompt()
+        session._saveSession()
+        
+    def readFile(SESSION_FILE):
+    #WIP, need to implement file saving
+    
+    #var obj = JSON.parse(data.toString());
+    #var session = new Scratch.UserSession(obj.username, obj.id, obj.sessionId);
+    #session.verify(function(err, valid) {
+    #  if (err) return cb(err);
+    #  if (valid) return cb(null, session);
+    #  prompt();
+    
+    def UserSession.saveSession():
+        writeFile(SESSION_FILE, JSON.stringify({
+        username: this.username,
+    	id: this.id,
+        sessionId: this.sessionId
+        }))
+    
+    def UserSession.verify():
+        request({
+            path: '/messages/ajax/get-message-count/', # probably going to change quite soon
+            sessionId: this.sessionId
+        })
+        if response.statusCode === 200:
+            return true
+        else:
+            return false
+    
+    def UserSession.getAllProjects():
+        requestJSON({
+            hostname: SERVER,
+            path: '/site-api/projects/all/',
+            method: 'GET',
+            sessionId: self.sessionId
+        })
+        
+    def UserSession.setProject(projectId, payload):
+        if payload.type() !== str:
+            payload = JSON.stringify(payload)
+            requestJSON({
+                hostname: PROJECTS_SERVER,
+                path: '/internalapi/project/' + projectId + '/set/',
+                method: 'POST',
+                body: payload,
+                sessionId: self.sessionId
+
+    def UserSession.getBackpack():
+        requestJSON({
+            hostname: SERVER,
+            path: '/internalapi/backpack/' + self.username + '/get/',
+            method: 'GET',
+            sessionId: self.sessionId
+        })
+
+    def UserSession.setBackpack = function(payload, cb) {
+        if (payload.type() !== str):
+          payload = JSON.stringify(payload);
+        requestJSON({
+          hostname: SERVER,
+          path: '/internalapi/backpack/' + this.username + '/set/',
+          method: 'POST',
+          body: payload,
+          sessionId: this.sessionId
+        })
+        
+    def UserSession.addComment(options):
+        if options.project!='' {
+            type = 'project';
+            id = options.project;
+        } elif options.user!='' {
+            type = 'user';
+            id = options.user;
+        } elif options.studio!='' {
+            type = 'gallery';
+            id = options.studio;
+        }
+        request({
+            hostname: SERVER,
+            path: '/site-api/comments/' + type + '/' + id + '/add/',
+            method: 'POST',
+            body: JSON.stringify({
+                content: options.content,
+                parent_id: options.parent || '',
+                commentee_id: options.replyto || '',
+            }),
+        sessionId: this.sessionId
+        })
+        
+    def UserSession.cloudSession(projectId):
+        Scratch.CloudSession._create(self, projectId)
+        
+        
+        #DONE UP TO HERE
+
+Scratch.CloudSession = function(user, projectId) {
+  this.user = user;
+  this.projectId = '' + projectId;
+  this.connection = null;
+  this.attemptedPackets = [];
+  this.variables = Object.create(null);
+  this._variables = Object.create(null);
+};
+util.inherits(Scratch.CloudSession, events.EventEmitter);
+Scratch.CloudSession._create = function(user, projectId, cb) {
+  var session = new Scratch.CloudSession(user, projectId);
+  session._connect(function(err) {
+    if (err) return cb(err);
+    cb(null, session);
+  });
+};
+Scratch.CloudSession.prototype._connect = function(cb) {
+  var self = this;
+
+  this.connection = new WebSocket('wss://' + CLOUD_SERVER + '/', [], {
+      headers: {
+        cookie: 'scratchsessionsid=' + this.user.sessionId + ';',
+        origin: 'https://scratch.mit.edu'
+      }
+    }
+  );
+  this.connection.on('open', function() {
+    self._sendHandshake();
+    for (var i = 0; i < self.attemptedPackets.length; i++) {
+      self._sendPacket(self.attemptedPackets[i]);
+    }
+    self.attemptedPackets = [];
+    if (cb) cb();
+  });
+
+  this.connection.on('close', function() {
+    // Reconnect because Scratch disconnects clients after no activity
+    // Probably will cause some data to not be pushed
+    self._connect();
+  });
+
+  var stream = '';
+  this.connection.on('message', function(chunk) {
+    stream += chunk;
+    var packets = stream.split('\n');
+    for(var i = 0; i < packets.length - 1; i++) {
+      var line = packets[i];
+      var packet;
+      try {
+        packet = JSON.parse(line);
+      } catch (err) {
+        console.warn('Invalid packet %s', line);
+        return;
+      }
+      self._handlePacket(packet);
+    }
+    stream = packets[packets.length - 1];
+  });
+};
+Scratch.CloudSession.prototype.end = function() {
+  if (this.connection) {
+    this.connection.close();
+  }
+};
+Scratch.CloudSession.prototype.get = function(name) {
+  return this._variables[name];
+};
+Scratch.CloudSession.prototype.set = function(name, value) {
+  this._variables[name] = value;
+  this._sendSet(name, value);
+};
+Scratch.CloudSession.prototype._handlePacket = function(packet) {
+  switch (packet.method) {
+    case 'set':
+      if (!({}).hasOwnProperty.call(this.variables, packet.name)) {
+        this._addVariable(packet.name, packet.value);
+      }
+      this._variables[packet.name] = packet.value;
+      this.emit('set', packet.name, packet.value);
+      break;
+    default:
+      console.warn('Unimplemented packet', packet.method);
+  }
+};
+Scratch.CloudSession.prototype._sendHandshake = function() {
+  this._send('handshake', {});
+};
+Scratch.CloudSession.prototype._sendSet = function(name, value) {
+  this._send('set', {
+    name: name,
+    value: value
+  });
+};
+Scratch.CloudSession.prototype._send = function(method, options) {
+  var object = {
+    user: this.user.username,
+    project_id: this.projectId,
+    method: method
+  };
+  for (var name in options) {
+    object[name] = options[name];
+  }
+
+  this._sendPacket(JSON.stringify(object) + '\n');
+};
+Scratch.CloudSession.prototype._sendPacket = function(data) {
+  if (this.connection.readyState === WebSocket.OPEN) {
+    this.connection.send(data);
+  } else {
+    this.attemptedPackets.push(data);
+  }
+};
+Scratch.CloudSession.prototype._addVariable = function(name, value) {
+  var self = this;
+  this._variables[name] = value;
+  Object.defineProperty(this.variables, name, {
+    enumerable: true,
+    get: function() {
+      return self.get(name);
+    },
+    set: function(value) {
+      self.set(name, value);
+    }
+  });
+};
+
+module.exports = Scratch;
