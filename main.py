@@ -1,5 +1,5 @@
 from urllib import request, parse
-#from crypto import #something
+#from crypto import #something (If needed)
 
 SERVER = 'scratch.mit.edu'
 PROJECTS_SERVER = 'projects.scratch.mit.edu'
@@ -111,17 +111,17 @@ class Scratch:
     
     def UserSession.saveSession():
         writeFile(SESSION_FILE, JSON.stringify({
-        username: this.username,
-    	id: this.id,
-        sessionId: this.sessionId
+        username: self.username,
+    	id: self.id,
+        sessionId: self.sessionId
         }))
     
     def UserSession.verify():
         request({
             path: '/messages/ajax/get-message-count/', # probably going to change quite soon
-            sessionId: this.sessionId
+            sessionId: self.sessionId
         })
-        if response.statusCode === 200:
+        if response.statusCode == 200:
             return true
         else:
             return false
@@ -157,10 +157,10 @@ class Scratch:
           payload = JSON.stringify(payload);
         requestJSON({
           hostname: SERVER,
-          path: '/internalapi/backpack/' + this.username + '/set/',
+          path: '/internalapi/backpack/' + self.username + '/set/',
           method: 'POST',
           body: payload,
-          sessionId: this.sessionId
+          sessionId: self.sessionId
         })
         
     def UserSession.addComment(options):
@@ -183,7 +183,7 @@ class Scratch:
                 parent_id: options.parent || '',
                 commentee_id: options.replyto || '',
             }),
-        sessionId: this.sessionId
+        sessionId: self.sessionId
         })
         
     def UserSession.cloudSession(projectId):
@@ -192,130 +192,128 @@ class Scratch:
         
         #DONE UP TO HERE
 
-Scratch.CloudSession = function(user, projectId) {
-  this.user = user;
-  this.projectId = '' + projectId;
-  this.connection = null;
-  this.attemptedPackets = [];
-  this.variables = Object.create(null);
-  this._variables = Object.create(null);
-};
-util.inherits(Scratch.CloudSession, events.EventEmitter);
-Scratch.CloudSession._create = function(user, projectId, cb) {
-  var session = new Scratch.CloudSession(user, projectId);
-  session._connect(function(err) {
-    if (err) return cb(err);
-    cb(null, session);
-  });
-};
-Scratch.CloudSession.prototype._connect = function(cb) {
-  var self = this;
+    def CloudSession():
+        self.user = user
+        self.projectId = '' + projectId
+        self.connection = null
+        self.attemptedPackets = [];
+        self.variables = Object.create(null)
+        self._variables = Object.create(null)
 
-  this.connection = new WebSocket('wss://' + CLOUD_SERVER + '/', [], {
-      headers: {
-        cookie: 'scratchsessionsid=' + this.user.sessionId + ';',
-        origin: 'https://scratch.mit.edu'
+    #util.inherits(Scratch.CloudSession, events.EventEmitter);
+    #What does this do?
+        
+    def CloudSession._create(user, projectId):
+        session = Scratch.CloudSession(user, projectId)
+        session._connect()
+        
+    def CloudSession._connect():
+        self.connection = new WebSocket('wss://' + CLOUD_SERVER + '/', [], {
+            headers: {
+                cookie: 'scratchsessionsid=' + self.user.sessionId + ';',
+                origin: 'https://scratch.mit.edu'
+            }
+        })
+
+#Replace these with correct callbacks
+  #self.connection.on('open', function() {
+  #  self._sendHandshake();
+  #  for (var i = 0; i < self.attemptedPackets.length; i++) {
+  #    self._sendPacket(self.attemptedPackets[i]);
+  #  }
+  #  self.attemptedPackets = [];
+  #  if (cb) cb();
+  #});
+
+  #self.connection.on('close', function() {
+  #  #Reconnect because Scratch disconnects clients after no activity
+  #  #Probably will cause some data to not be pushed
+  #  self._connect();
+  #});
+
+  #var stream = '';
+  #self.connection.on('message', function(chunk) {
+  #  stream += chunk;
+  #  var packets = stream.split('\n');
+  #  for(var i = 0; i < packets.length - 1; i++) {
+  #    var line = packets[i];
+  #    var packet;
+  #    try {
+  #      packet = JSON.parse(line);
+  #    } catch (err) {
+  #      console.warn('Invalid packet %s', line);
+  #      return;
+  #    }
+  #    self._handlePacket(packet);
+  #  }
+  #  stream = packets[packets.length - 1];
+  #});
+#};
+    def CloudSession.end():
+        if self.connection!="":
+            self.connection.close()
+
+    def CloudSession.get(name):
+        return self._variables[name]
+        
+    def CloudSession.set(name, value):
+        self._variables[name] = value
+        self._sendSet(name, value)
+        
+    def CloudSession._handlePacket(packet):
+        pass
+       #IDK what to do with this
+    #  switch (packet.method) {
+    #    case 'set':
+    #      if (!({}).hasOwnProperty.call(self.variables, packet.name)) {
+    #        self._addVariable(packet.name, packet.value);
+    #      }
+    #      self._variables[packet.name] = packet.value;
+    #      self.emit('set', packet.name, packet.value);
+    #      break;
+    #    default:
+    #      console.warn('Unimplemented packet', packet.method);
+    #  }
+    #};
+
+    def CloudSession._sendHandshake():
+      self._send('handshake', {})
+      
+    def CloudSession._sendSet(name, value):
+        self._send('set', {
+            name: name,
+            value: value
+        })
+        
+    def CloudSession._send(method, options):
+        object = {
+            user: self.user.username,
+            project_id: self.projectId,
+            method: method
       }
-    }
-  );
-  this.connection.on('open', function() {
-    self._sendHandshake();
-    for (var i = 0; i < self.attemptedPackets.length; i++) {
-      self._sendPacket(self.attemptedPackets[i]);
-    }
-    self.attemptedPackets = [];
-    if (cb) cb();
-  });
-
-  this.connection.on('close', function() {
-    // Reconnect because Scratch disconnects clients after no activity
-    // Probably will cause some data to not be pushed
-    self._connect();
-  });
-
-  var stream = '';
-  this.connection.on('message', function(chunk) {
-    stream += chunk;
-    var packets = stream.split('\n');
-    for(var i = 0; i < packets.length - 1; i++) {
-      var line = packets[i];
-      var packet;
-      try {
-        packet = JSON.parse(line);
-      } catch (err) {
-        console.warn('Invalid packet %s', line);
-        return;
-      }
-      self._handlePacket(packet);
-    }
-    stream = packets[packets.length - 1];
-  });
-};
-Scratch.CloudSession.prototype.end = function() {
-  if (this.connection) {
-    this.connection.close();
-  }
-};
-Scratch.CloudSession.prototype.get = function(name) {
-  return this._variables[name];
-};
-Scratch.CloudSession.prototype.set = function(name, value) {
-  this._variables[name] = value;
-  this._sendSet(name, value);
-};
-Scratch.CloudSession.prototype._handlePacket = function(packet) {
-  switch (packet.method) {
-    case 'set':
-      if (!({}).hasOwnProperty.call(this.variables, packet.name)) {
-        this._addVariable(packet.name, packet.value);
-      }
-      this._variables[packet.name] = packet.value;
-      this.emit('set', packet.name, packet.value);
-      break;
-    default:
-      console.warn('Unimplemented packet', packet.method);
-  }
-};
-Scratch.CloudSession.prototype._sendHandshake = function() {
-  this._send('handshake', {});
-};
-Scratch.CloudSession.prototype._sendSet = function(name, value) {
-  this._send('set', {
-    name: name,
-    value: value
-  });
-};
-Scratch.CloudSession.prototype._send = function(method, options) {
-  var object = {
-    user: this.user.username,
-    project_id: this.projectId,
-    method: method
-  };
-  for (var name in options) {
-    object[name] = options[name];
-  }
-
-  this._sendPacket(JSON.stringify(object) + '\n');
-};
-Scratch.CloudSession.prototype._sendPacket = function(data) {
-  if (this.connection.readyState === WebSocket.OPEN) {
-    this.connection.send(data);
-  } else {
-    this.attemptedPackets.push(data);
-  }
-};
-Scratch.CloudSession.prototype._addVariable = function(name, value) {
-  var self = this;
-  this._variables[name] = value;
-  Object.defineProperty(this.variables, name, {
-    enumerable: true,
-    get: function() {
-      return self.get(name);
-    },
-    set: function(value) {
-      self.set(name, value);
-    }
-  });
-};
+      for (name in options):
+          object[name] = options[name]
+      
+      self._sendPacket(JSON.stringify(object) + '\n')
+        
+    def CloudSession._sendPacket(data):
+        if (self.connection.readyState == WebSocket.OPEN):
+            self.connection.send(data)
+        else:
+            self.attemptedPackets.push(data)
+        
+    def CloudSession._addVariable(name, value):
+        self = self;
+        self._variables[name] = value;
+        #What is this?
+        Object.defineProperty(self.variables, name, {
+            enumerable: true,
+            get: function() {
+                return self.get(name);
+            },
+            set: function(value) {
+                self.set(name, value);
+            }
+        })
 
 module.exports = Scratch;
