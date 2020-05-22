@@ -22,12 +22,12 @@ def request(options):
     if options.sessionId!=[]:
         headers.Cookie += 'scratchsessionsid=' + options.sessionId + ';'
         
-    if options.hostname=""
+    if options.hostname==""
         host=SERVER
     else:
         host=options.hostname
     
-    if method=""
+    if method==""
         method='GET'
     else:
         method=options.method
