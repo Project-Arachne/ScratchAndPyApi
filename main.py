@@ -72,15 +72,19 @@ def parseCookie(cookie):
         cookies[pair[0].trim()] = pair[1].trim()
     return cookies
 
+
 class Scratch:
-    def getProject(projectId):
+    
+    @classmethod
+    def getProject(cls, projectId):
         requestJSON({
             hostname: PROJECTS_SERVER,
             path: '/' + projectId,
             method: 'GET'
         })
     
-    def getProjects(username):
+    @classmethod
+    def getProjects(cls, username):
         requestJSON({
             hostname: API_SERVER,
             path: '/users/' + username + '/projects',
@@ -90,13 +94,13 @@ class Scratch:
         
 class UserSession(Scratch):
     
-    def __init__(username, id, sessionId):
+    def __init__(self, username, id, sessionId):
         self.username = username
         self.id = id
         self.sessionId = sessionId
     
     @classmethod
-    def create(username, password, cls):
+    def create(cls, username, password):
         try:
             request({
                 path: '/login/',
@@ -143,7 +147,7 @@ class UserSession(Scratch):
         #sessionId: self.sessionId
         #}))
     
-    def verify():
+    def verify(self): #Can this be a static method? Need to figure out if request() depends on the session
         request({
             path: '/messages/ajax/get-message-count/', # probably going to change quite soon
             sessionId: self.sessionId
@@ -153,7 +157,7 @@ class UserSession(Scratch):
         else:
             return false
     
-    def getAllProjects():
+    def getAllProjects(self): #Static?
         requestJSON({
             hostname: SERVER,
             path: '/site-api/projects/all/',
@@ -161,7 +165,7 @@ class UserSession(Scratch):
             sessionId: self.sessionId
         })
         
-    def setProject(projectId, payload):
+    def setProject(self, projectId, payload):
         if payload.type() !== str:
             payload = JSON.stringify(payload)
             requestJSON({
@@ -171,7 +175,7 @@ class UserSession(Scratch):
                 body: payload,
                 sessionId: self.sessionId
 
-    def getBackpack():
+    def getBackpack(self):
         requestJSON({
             hostname: SERVER,
             path: '/internalapi/backpack/' + self.username + '/get/',
@@ -179,7 +183,7 @@ class UserSession(Scratch):
             sessionId: self.sessionId
         })
 
-    def setBackpack(payload) {
+    def setBackpack(self, payload) {
         if (payload.type() != str):
             payload = JSON.stringify(payload)
         requestJSON({
@@ -190,7 +194,7 @@ class UserSession(Scratch):
             sessionId: self.sessionId
         })
         
-    def addComment(options):
+    def addComment(self, options):
         if options.project!='' {
             type = 'project'
             id = options.project
@@ -213,13 +217,13 @@ class UserSession(Scratch):
         sessionId: self.sessionId
         })
         
-    def cloudSession(projectId):
+    def cloudSession(self, projectId):
         CloudSession._create(self, projectId)
         
         
-   class CloudSession():
+   class CloudSession(UserSession):
 
-    def __init__():
+    def __init__(self):
         self.user = user
         self.projectId = '' + projectId
         self.connection = null
@@ -229,13 +233,14 @@ class UserSession(Scratch):
 
     #util.inherits(Scratch.CloudSession, events.EventEmitter);
     #What does this do?
+    #I think I did inheritance correctly
         
     @classmethod
-    def _create(user, projectId, cls):
+    def _create(cls, user, projectId):
         session = CloudSession(user, projectId)
         session._connect()
         
-    def _connect():
+    def _connect(self):
         self.connection = new WebSocket('wss://' + CLOUD_SERVER + '/', [], {
             headers: {
                 cookie: 'scratchsessionsid=' + self.user.sessionId + ';',
@@ -277,18 +282,18 @@ class UserSession(Scratch):
   #  stream = packets[packets.length - 1];
   #});
 #};
-    def end():
+    def end(self):
         if self.connection!="":
             self.connection.close()
 
-    def get(name):
+    def get(self, name):
         return self._variables[name]
         
-    def set(name, value):
+    def set(self, name, value):
         self._variables[name] = value
         self._sendSet(name, value)
         
-    def _handlePacket(packet):
+    def _handlePacket(self, packet):
         pass
        #IDK what to do with this
     #  switch (packet.method) {
@@ -304,16 +309,16 @@ class UserSession(Scratch):
     #  }
     #};
 
-    def _sendHandshake():
+    def _sendHandshake(self):
       self._send('handshake', {})
       
-    def _sendSet(name, value):
+    def _sendSet(self, name, value):
         self._send('set', {
             name: name,
             value: value
         })
         
-    def _send(method, options):
+    def _send(self, method, options):
         object = {
             user: self.user.username,
             project_id: self.projectId,
@@ -324,13 +329,13 @@ class UserSession(Scratch):
       
       self._sendPacket(JSON.stringify(object) + '\n')
         
-    def _sendPacket(data):
+    def _sendPacket(self, data):
         if (self.connection.readyState == WebSocket.OPEN):
             self.connection.send(data)
         else:
             self.attemptedPackets.push(data)
         
-    def _addVariable(name, value):
+    def _addVariable(self, name, value):
         self = self;
         self._variables[name] = value;
         #What is this?
@@ -344,4 +349,5 @@ class UserSession(Scratch):
             }
         })
 
-module.exports = Scratch;
+#module.exports = Scratch;
+#What does this do?
