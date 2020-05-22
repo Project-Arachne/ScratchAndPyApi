@@ -79,13 +79,24 @@ class Scratch:
             path: '/' + projectId,
             method: 'GET'
         })
+    
+    def getProjects(username):
+        requestJSON({
+            hostname: API_SERVER,
+            path: '/users/' + username + '/projects',
+            method: 'GET'
+  })
         
-    def UserSession(username, id, sessionId):
+        
+class UserSession(Scratch):
+    
+    def __init__(username, id, sessionId):
         self.username = username
         self.id = id
         self.sessionId = sessionId
     
-    def UserSession.create(username, password):
+    @classmethod
+    def create(username, password, cls):
         try:
             request({
                 path: '/login/',
@@ -94,37 +105,45 @@ class Scratch:
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             }
             user = JSON.parse(body)[0];
-            return new Scratch.UserSession(user.username, user.id, parseCookie(response.headers['set-cookie'][0]).scratchsessionsid));
+            return UserSession(user.username, user.id, parseCookie(response.headers['set-cookie'][0]).scratchsessionsid));
         except err:
             print("error:",err)
     
-    def UserSession.prompt():
+    @classmethod
+    def prompt(cls):
         uname=input("Enter username")
         pass=input("Enter password")
-        Scratch.UserSession.create(uname, pass)
+        cls.create(uname, pass)
     
-    def UserSession.load():
-        prompt()
-        session._saveSession()
+    @classmethod
+    def load(cls):
+        cls.prompt()
+        cls._saveSession()
         
+    @staticmethod
     def readFile(SESSION_FILE):
-    #WIP, need to implement file saving
+        pass
+        #WIP, need to implement file saving
+
+        #var obj = JSON.parse(data.toString());
+        #var session = new Scratch.UserSession(obj.username, obj.id, obj.sessionId);
+        #session.verify(function(err, valid) {
+        #  if (err) return cb(err);
+        #  if (valid) return cb(null, session);
+        #  prompt();
     
-    #var obj = JSON.parse(data.toString());
-    #var session = new Scratch.UserSession(obj.username, obj.id, obj.sessionId);
-    #session.verify(function(err, valid) {
-    #  if (err) return cb(err);
-    #  if (valid) return cb(null, session);
-    #  prompt();
+    @staticmethod
+    def saveSession():
+        pass
+        #Also WIP
+        
+        #writeFile(SESSION_FILE, JSON.stringify({
+        #username: self.username,
+    	#id: self.id,
+        #sessionId: self.sessionId
+        #}))
     
-    def UserSession.saveSession():
-        writeFile(SESSION_FILE, JSON.stringify({
-        username: self.username,
-    	id: self.id,
-        sessionId: self.sessionId
-        }))
-    
-    def UserSession.verify():
+    def verify():
         request({
             path: '/messages/ajax/get-message-count/', # probably going to change quite soon
             sessionId: self.sessionId
@@ -134,7 +153,7 @@ class Scratch:
         else:
             return false
     
-    def UserSession.getAllProjects():
+    def getAllProjects():
         requestJSON({
             hostname: SERVER,
             path: '/site-api/projects/all/',
@@ -142,7 +161,7 @@ class Scratch:
             sessionId: self.sessionId
         })
         
-    def UserSession.setProject(projectId, payload):
+    def setProject(projectId, payload):
         if payload.type() !== str:
             payload = JSON.stringify(payload)
             requestJSON({
@@ -152,7 +171,7 @@ class Scratch:
                 body: payload,
                 sessionId: self.sessionId
 
-    def UserSession.getBackpack():
+    def getBackpack():
         requestJSON({
             hostname: SERVER,
             path: '/internalapi/backpack/' + self.username + '/get/',
@@ -160,27 +179,27 @@ class Scratch:
             sessionId: self.sessionId
         })
 
-    def UserSession.setBackpack = function(payload, cb) {
-        if (payload.type() !== str):
-          payload = JSON.stringify(payload);
+    def setBackpack(payload) {
+        if (payload.type() != str):
+            payload = JSON.stringify(payload)
         requestJSON({
-          hostname: SERVER,
-          path: '/internalapi/backpack/' + self.username + '/set/',
-          method: 'POST',
-          body: payload,
-          sessionId: self.sessionId
+            hostname: SERVER,
+            path: '/internalapi/backpack/' + self.username + '/set/',
+            method: 'POST',
+            body: payload,
+            sessionId: self.sessionId
         })
         
-    def UserSession.addComment(options):
+    def addComment(options):
         if options.project!='' {
-            type = 'project';
-            id = options.project;
+            type = 'project'
+            id = options.project
         } elif options.user!='' {
-            type = 'user';
+            type = 'user'
             id = options.user;
         } elif options.studio!='' {
-            type = 'gallery';
-            id = options.studio;
+            type = 'gallery'
+            id = options.studio
         }
         request({
             hostname: SERVER,
@@ -194,13 +213,13 @@ class Scratch:
         sessionId: self.sessionId
         })
         
-    def UserSession.cloudSession(projectId):
-        Scratch.CloudSession._create(self, projectId)
+    def cloudSession(projectId):
+        CloudSession._create(self, projectId)
         
         
-        #DONE UP TO HERE
+   class CloudSession():
 
-    def CloudSession():
+    def __init__():
         self.user = user
         self.projectId = '' + projectId
         self.connection = null
@@ -211,11 +230,12 @@ class Scratch:
     #util.inherits(Scratch.CloudSession, events.EventEmitter);
     #What does this do?
         
-    def CloudSession._create(user, projectId):
-        session = Scratch.CloudSession(user, projectId)
+    @classmethod
+    def _create(user, projectId, cls):
+        session = CloudSession(user, projectId)
         session._connect()
         
-    def CloudSession._connect():
+    def _connect():
         self.connection = new WebSocket('wss://' + CLOUD_SERVER + '/', [], {
             headers: {
                 cookie: 'scratchsessionsid=' + self.user.sessionId + ';',
@@ -257,18 +277,18 @@ class Scratch:
   #  stream = packets[packets.length - 1];
   #});
 #};
-    def CloudSession.end():
+    def end():
         if self.connection!="":
             self.connection.close()
 
-    def CloudSession.get(name):
+    def get(name):
         return self._variables[name]
         
-    def CloudSession.set(name, value):
+    def set(name, value):
         self._variables[name] = value
         self._sendSet(name, value)
         
-    def CloudSession._handlePacket(packet):
+    def _handlePacket(packet):
         pass
        #IDK what to do with this
     #  switch (packet.method) {
@@ -284,16 +304,16 @@ class Scratch:
     #  }
     #};
 
-    def CloudSession._sendHandshake():
+    def _sendHandshake():
       self._send('handshake', {})
       
-    def CloudSession._sendSet(name, value):
+    def _sendSet(name, value):
         self._send('set', {
             name: name,
             value: value
         })
         
-    def CloudSession._send(method, options):
+    def _send(method, options):
         object = {
             user: self.user.username,
             project_id: self.projectId,
@@ -304,13 +324,13 @@ class Scratch:
       
       self._sendPacket(JSON.stringify(object) + '\n')
         
-    def CloudSession._sendPacket(data):
+    def _sendPacket(data):
         if (self.connection.readyState == WebSocket.OPEN):
             self.connection.send(data)
         else:
             self.attemptedPackets.push(data)
         
-    def CloudSession._addVariable(name, value):
+    def _addVariable(name, value):
         self = self;
         self._variables[name] = value;
         #What is this?
