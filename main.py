@@ -61,15 +61,15 @@ def requestJSON(options):
         print(exc)
         
 def parseCookie(cookie):
-    cookies = {};
-    each = cookie.split(';');
-    i = each.length;
+    cookies = {}
+    each = cookie.split(';')
+    i = each.length
     rep=true
     while rep:
         if (each[i].indexOf('=') == -1):
             rep=false
-        var pair = each[i].split('=');
-        cookies[pair[0].trim()] = pair[1].trim();
+        pair = each[i].split('=')
+        cookies[pair[0].trim()] = pair[1].trim()
     return cookies
 
 class Scratch:
@@ -81,9 +81,9 @@ class Scratch:
         })
         
     def UserSession(username, id, sessionId):
-        self.username = username;
-        self.id = id;
-        self.sessionId = sessionId;
+        self.username = username
+        self.id = id
+        self.sessionId = sessionId
     
     def UserSession.create(username, password):
         try:
