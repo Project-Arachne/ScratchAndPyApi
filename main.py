@@ -108,8 +108,8 @@ class UserSession(Scratch):
                 body: JSON.stringify({username: username, password: password}),
                 headers: {'X-Requested-With': 'XMLHttpRequest'}
             }
-            user = JSON.parse(body)[0];
-            return UserSession(user.username, user.id, parseCookie(response.headers['set-cookie'][0]).scratchsessionsid));
+            user = JSON.parse(body)[0]
+            return UserSession(user.username, user.id, parseCookie(response.headers['set-cookie'][0]).scratchsessionsid))
         except err:
             print("error:",err)
     
